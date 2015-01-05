@@ -1,4 +1,4 @@
-(function(Reflux, TodoActions, global) {
+(function(Reflux, TodoActions, UndoActions, global) {
     'use strict';
 
     // some variables and helpers for our fake database stuff
@@ -30,10 +30,23 @@
                 label: label
             }].concat(this.list));
         },
+        onAddSetOfItems: function(items) {
+          this.updateList(items.concat(this.list));
+        },
         onRemoveItem: function(itemKey) {
+            var removedItems = [];
+
             this.updateList(_.filter(this.list,function(item){
-                return item.key!==itemKey;
+                var remove = item.key===itemKey;
+
+                if (remove) {
+                  removedItems.push(item);
+                }
+
+                return !remove;
             }));
+
+            UndoActions.addRemovedItems(removedItems);
         },
         onToggleItem: function(itemKey) {
             var foundItem = getItemByKey(this.list,itemKey);
@@ -49,9 +62,17 @@
             }));
         },
         onClearCompleted: function() {
+            var removedItems = [];
+
             this.updateList(_.filter(this.list, function(item) {
+                if (item.isComplete) {
+                  removedItems.push(item);
+                }
+
                 return !item.isComplete;
             }));
+
+            UndoActions.addRemovedItems(removedItems);
         },
         // called whenever we change a list. normally this would mean a database API call
         updateList: function(list){
@@ -82,4 +103,4 @@
         }
     });
 
-})(window.Reflux, window.TodoActions, window);
+})(window.Reflux, window.TodoActions, window.UndoActions, window);
